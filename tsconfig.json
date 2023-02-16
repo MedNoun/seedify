@@ -7,8 +7,11 @@
     "rootDir": "src",
     "outDir": "dist",
     "moduleResolution": "node",
-    "baseUrl": ".",
-  
+    "baseUrl": "./",
+    "allowJs": true,
+    "paths": {
+      "*": ["*", "*.js"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules"],
