@@ -6,4 +6,4 @@ import * as dgram from 'dgram';
 
 const trackerManager = new TrackerManager("src/torrent-files/t9.torrent")
 
-trackerManager.udpSendRequest("hello",(response)=>{console.log('my response is :', response)});
+trackerManager.udpSendRequest(trackerManager.connectRequest(), (response) => { console.log('my response is :', response) });
