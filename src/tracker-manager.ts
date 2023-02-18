@@ -56,7 +56,6 @@ export class TrackerManager {
     }
 
     public parseConnectResponse(connectResponse: Buffer) {
-
         const action = connectResponse.readUint32BE(0)
         const transactionId = connectResponse.readUint32BE(4)
         const connectionId = connectResponse.readUint32BE(8)
@@ -66,5 +65,11 @@ export class TrackerManager {
             connectionId: connectionId
         }
         return parsedConnectResponse
+    }
+    public announceRequest(){
+
+    }
+    public parseAnnounceRequest(){
+        
     }
 }
