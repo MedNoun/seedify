@@ -6,7 +6,7 @@ interface Info{
 }
 export default interface Tracker{
     announce: string;
-    announceList: string[][];
+    "announce-list": string[];
     comment: string;
     createdBy: string;
     creationDate: number;
