@@ -1,45 +1,33 @@
 
+import * as fs from 'fs';
+import bencode from 'bencode'
 import { Socket } from 'dgram';
 import URLParse, { URLPart } from 'url-parse';
 import * as dgram from 'dgram';
+import Tracker from './types/tracker';
+import Announce from './types/announce';
 
 export class TrackerManager {
-    
-    trackerUDPUrl: string
-
-    constructor(trackerUDPUrl: string) {
-        this.trackerUDPUrl = trackerUDPUrl
+    private tracker : Tracker;
+    private url : any;// supposed to be Announce class but there is a bug
+    private socket: Socket;
+    constructor(torrent: string) {
+        const torrentFileContent = fs.readFileSync(torrent);
+        this.tracker = bencode.decode(torrentFileContent, "utf8")
+        this.url = this.parseUrl(this.tracker.announce);
+        this.socket = dgram.createSocket("udp4");
+        
     }
 
-    public parseUrl(url: string) {
-        const parsedURL = URLParse(url);
-        console.log('the parsed url is :', parsedURL)
-        return parsedURL
+    public parseUrl(url: string)  {
+        this.url = URLParse(url);
     }
 
-    public udpSendRequest(socket: Socket, request: any, url: any) {
-        socket.send(request, 0, request.length, url.port, url.hostname, (data) => {
+    public udpSendRequest(request: any,callback) {
+        this.socket.send(request, 0, request.length, this.url.port, this.url.hostname, (data) => {
             console.log("the data is :", data)
         })
+        this.socket.on("message",(response)=>{callback(response)})
     }
-
-
-    // the object returned from parsed url is :
-    // {
-    //     slashes: true,
-    //     protocol: 'udp:',
-    //     hash: '',
-    //     query: '',
-    //     pathname: '',
-    //     auth: '',
-    //     host: 'tracker.coppersurfer.tk:6969',
-    //     port: '6969',
-    //     hostname: 'tracker.coppersurfer.tk',
-    //     password: '',
-    //     username: '',
-    //     origin: 'null',
-    //     href: 'udp://tracker.coppersurfer.tk:6969'
-    //   }
-
 
 }

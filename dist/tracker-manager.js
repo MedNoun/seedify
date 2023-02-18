@@ -1,7 +1,12 @@
+import * as fs from 'fs';
+import bencode from 'bencode';
 import URLParse from 'url-parse';
 export class TrackerManager {
-    constructor(trackerUDPUrl) {
-        this.trackerUDPUrl = trackerUDPUrl;
+    constructor(torrent) {
+        const torrentFileContent = fs.readFileSync(torrent);
+        const torrentFileContentDecoded = bencode.decode(torrentFileContent, "utf8");
+        const parsedURL = URLParse(torrentFileContentDecoded.announce);
+        console.log('the parsed url is :', parsedURL);
     }
     parseUrl(url) {
         const parsedURL = URLParse(url);

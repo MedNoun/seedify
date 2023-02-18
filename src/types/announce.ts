@@ -5,8 +5,8 @@ export default interface Announce{
     query: string;
     pathname: string;
     auth: string;
-    host: 'tracker.coppersurfer.tk:6969';
-    port: '6969';
+    host: string;
+    port: string;
     hostname: string;
     password: string;
     username: string;
