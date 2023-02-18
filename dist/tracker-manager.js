@@ -23,7 +23,10 @@ export class TrackerManager {
         this.socket.on('error', (err) => {
             console.error('Socket error:', err);
         });
-        this.socket.on("message", (msg, rinfo) => { console.log("the response is : ", msg); });
+        this.socket.on("message", (msg, rinfo) => {
+            this.parseConnectResponse(msg);
+            console.log('the other is :', rinfo);
+        });
     }
     connectRequest() {
         const connectRequestBuffer = Buffer.allocUnsafe(16);
@@ -38,5 +41,16 @@ export class TrackerManager {
         //generate the random transactionId
         randomBytes(4).copy(connectRequestBuffer, 12);
         return connectRequestBuffer;
+    }
+    parseConnectResponse(connectResponse) {
+        const action = connectResponse.readUint32BE(0);
+        const transactionId = connectResponse.readUint32BE(4);
+        const connectionId = connectResponse.readUint32BE(8);
+        let parsedConnectResponse = {
+            action: action,
+            transactionId: transactionId,
+            connectionId: connectionId
+        };
+        return parsedConnectResponse;
     }
 }

@@ -9,6 +9,7 @@ import Announce from './types/announce';
 import { Buffer } from 'buffer'
 import { ActionsType } from './types/requestActions.js';
 import { randomBytes } from 'crypto';
+import connectRespoonse from './types/connect-response';
 
 
 export class TrackerManager {
@@ -33,7 +34,10 @@ export class TrackerManager {
         this.socket.on('error', (err) => {
             console.error('Socket error:', err);
         });
-        this.socket.on("message", (msg, rinfo) => { console.log("the response is : ", msg) })
+        this.socket.on("message", (msg, rinfo) => {
+            this.parseConnectResponse(msg)
+            console.log('the other is :', rinfo)
+        })
     }
 
     public connectRequest() {
@@ -49,5 +53,18 @@ export class TrackerManager {
         //generate the random transactionId
         randomBytes(4).copy(connectRequestBuffer, 12)
         return connectRequestBuffer
+    }
+
+    public parseConnectResponse(connectResponse: Buffer) {
+
+        const action = connectResponse.readUint32BE(0)
+        const transactionId = connectResponse.readUint32BE(4)
+        const connectionId = connectResponse.readUint32BE(8)
+        let parsedConnectResponse: connectRespoonse = {
+            action: action,
+            transactionId: transactionId,
+            connectionId: connectionId
+        }
+        return parsedConnectResponse
     }
 }
