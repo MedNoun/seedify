@@ -1,35 +1,59 @@
-
-
-import * as fs from 'fs';
-import bencode from 'bencode'
+import * as fs from "fs";
+import * as crypto from "crypto";
+import { toBufferBE, toBufferLE } from "bigint-buffer";
+import bencode from "bencode";
 
 export class TorrentParser {
+  private torrentFilePath: string;
+  // there is an interface already implemented for the content use it next time "tracker.ts"
+  private torrentFileContent: any;
 
-    private torrentFilePath: string
-    private torrentFileContent: any
+  constructor(torrentFilePath: string) {
+    this.torrentFilePath = torrentFilePath;
+    this.torrentFileContent = bencode.decode(
+      fs.readFileSync(this.torrentFilePath),
+      "utf8"
+    );
+    console.log("content : ", this.torrentFileContent);
+    console.log("content : ", this.torrentFileContent.announce);
+  }
+  public get infoHash() {
+    return crypto
+      .createHash("sha1")
+      .update(bencode.encode(this.torrent.info))
+      .digest();
+  }
 
-    constructor(torrentFilePath: string) {
-        this.torrentFilePath = torrentFilePath
-        this.torrentFileContent = bencode.decode(fs.readFileSync(this.torrentFilePath), "utf8")
-    }
+  public get size() {
+    const size = this.torrent.info.files
+      ? this.torrent.info.files
+          .map((file) => file.length)
+          .reduce((a, b) => a + b)
+      : this.torrent.info.length;
+    return Buffer.from("" + size);
+  }
 
-    public getTrackersUrls() {
-        return this.torrentFileContent["announce-list"]
-    }
+  public get torrent() {
+    return this.torrentFileContent;
+  }
 
-    public getMainUdpUrl() {
-        return this.torrentFileContent['announce-list'][2]
-    }
+  public get trackersUrls() {
+    return this.torrentFileContent["announce-list"];
+  }
 
-    public getAnnounceUrl() {
-        return this.torrentFileContent["announce"]
-    }
+  public get mainUdpUrl() {
+    return this.torrentFileContent["announce-list"][2];
+  }
 
-    public getInfo() {
-        return this.torrentFileContent["info"]
-    }
+  public get announceUrl() {
+    return this.torrentFileContent["announce"];
+  }
 
-    public getPieces() {
-        return this.torrentFileContent.info["pieces"]
-    }
+  public get info() {
+    return this.torrentFileContent["info"];
+  }
+
+  public get pieces() {
+    return this.torrentFileContent.info["pieces"];
+  }
 }

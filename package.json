@@ -20,6 +20,9 @@
   "dependencies": {
     "@types/url-parse": "^1.4.8",
     "bencode": "^2.0.2",
+    "bigint-buffer": "^1.1.5",
+    "borc": "^3.0.0",
+    "crypto": "^1.0.1",
     "fs": "^0.0.1-security",
     "url-parse": "^1.5.10"
   }
