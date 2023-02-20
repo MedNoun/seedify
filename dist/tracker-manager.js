@@ -1,21 +1,21 @@
-import * as fs from 'fs';
-import bencode from 'bencode';
 import URLParse from 'url-parse';
 import * as dgram from 'dgram';
 import { Buffer } from 'buffer';
 import { ActionsType } from './types/requestActions.js';
 import { randomBytes } from 'crypto';
+import { TorrentParser } from './torrent-parser.js';
 export class TrackerManager {
     constructor(torrent) {
-        const torrentFileContent = fs.readFileSync(torrent);
-        this.tracker = bencode.decode(torrentFileContent, "utf8");
+        this.torrentParser = new TorrentParser(torrent);
+        // const torrentFileContent = fs.readFileSync(torrent);
+        // this.tracker = bencode.decode(torrentFileContent, "utf8")
         this.socket = dgram.createSocket("udp4");
     }
     parseUrl(url) {
         return URLParse(url);
     }
     udpSendRequest(request, callback) {
-        const url = this.parseUrl(this.tracker['announce-list'][2]);
+        const url = this.parseUrl(this.torrentParser.getMainUdpUrl());
         this.socket.send(request, 0, request.length, Number(url.port), url.hostname, (err, bytes) => {
             if (err)
                 throw err;
@@ -52,5 +52,9 @@ export class TrackerManager {
             connectionId: connectionId
         };
         return parsedConnectResponse;
+    }
+    announceRequest() {
+    }
+    parseAnnounceRequest() {
     }
 }
