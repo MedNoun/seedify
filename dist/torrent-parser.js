@@ -4,7 +4,6 @@ export class TorrentParser {
     constructor(torrentFilePath) {
         this.torrentFilePath = torrentFilePath;
         this.torrentFileContent = bencode.decode(fs.readFileSync(this.torrentFilePath), "utf8");
-        console.log(this.torrentFileContent);
     }
     getTrackersUrls() {
         return this.torrentFileContent["announce-list"];

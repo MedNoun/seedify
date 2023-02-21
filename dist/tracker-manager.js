@@ -7,8 +7,6 @@ import { TorrentParser } from './torrent-parser.js';
 export class TrackerManager {
     constructor(torrent) {
         this.torrentParser = new TorrentParser(torrent);
-        // const torrentFileContent = fs.readFileSync(torrent);
-        // this.tracker = bencode.decode(torrentFileContent, "utf8")
         this.socket = dgram.createSocket("udp4");
     }
     parseUrl(url) {
