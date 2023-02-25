@@ -7,7 +7,6 @@ export class TorrentParser {
         this.torrentFilePath = torrentFilePath;
         this.torrentFileContent = bencode.decode(fs.readFileSync(this.torrentFilePath), "utf8");
         console.log("content : ", this.torrentFileContent);
-        console.log("content : ", this.torrentFileContent.announce);
     }
     get infoHash() {
         return crypto

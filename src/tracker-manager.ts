@@ -24,7 +24,6 @@ export class TrackerManager {
   }
   private respType(resp) {
     const action = resp.readUInt32BE(0);
-    console.log("the action :", action)
     if (action === 0) return "connect";
     if (action === 1) return "announce";
     if (action === 2) return "scrape";
@@ -62,6 +61,7 @@ export class TrackerManager {
         callback(announceResp);
       } else if (this.respType(response) === "error") {
         console.log('error in the response !')
+        console.log('the parsed error is : ', this.parseError(response))
       }
     });
   }
@@ -84,13 +84,6 @@ export class TrackerManager {
     );
     this.socket.on("error", (err) => {
       console.error("Socket error:", err);
-    });
-
-    //hedhy normalement zeyda twali hasb mazedt enty fel code lfouk chouf ctrl + f 'haza2' mr mohamed
-    this.socket.on("message", (response, rinfo) => {
-
-      console.log("I ama here with response type :", this.respType(response))
-
     });
   }
 

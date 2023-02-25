@@ -21,7 +21,6 @@ export class TrackerManager {
     }
     respType(resp) {
         const action = resp.readUInt32BE(0);
-        console.log("the action :", action);
         if (action === 0)
             return "connect";
         if (action === 1)
@@ -75,10 +74,6 @@ export class TrackerManager {
         });
         this.socket.on("error", (err) => {
             console.error("Socket error:", err);
-        });
-        //hedhy normalement zeyda twali hasb mazedt enty fel code lfouk chouf ctrl + f 'haza2' mr mohamed
-        this.socket.on("message", (response, rinfo) => {
-            console.log("I ama here with response type :", this.respType(response));
         });
     }
     connectRequest() {
