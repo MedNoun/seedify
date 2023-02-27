@@ -9,6 +9,7 @@ export class TorrentParser {
         console.log("content : ", this.torrentFileContent);
     }
     get infoHash() {
+        console.log("infoooo : ", this.info);
         return crypto
             .createHash("sha1")
             .update(bencode.encode(this.torrent.info))

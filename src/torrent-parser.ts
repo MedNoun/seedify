@@ -18,6 +18,7 @@ export class  TorrentParser {
     console.log("content : ", this.torrentFileContent);
   }
   public get infoHash() {
+    console.log("infoooo : " , this.info)
     return crypto
       .createHash("sha1")
       .update(bencode.encode(this.torrent.info))
@@ -56,4 +57,5 @@ export class  TorrentParser {
   public get pieces() {
     return this.torrentFileContent.info["pieces"];
   }
+  
 }
