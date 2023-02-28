@@ -207,7 +207,7 @@ export class TrackerManager {
   public createUrl(event: Events, parsedUrl) {
 
     let query = {
-      info_hash: "%A6%0D%E3F%E3%9E5%F6%B5%C45q%3E%00S%A29E%3D%D1",
+      info_hash: escape(this.torrentParser.infoHash.toString("binary")),
       peer_id: "-AT0001-" + Math.random().toString().slice(2, 14),
       port: parsedUrl.port || 6882,
       uploaded: 0,

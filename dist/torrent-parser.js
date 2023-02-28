@@ -5,14 +5,14 @@ import BigNum from "bignum";
 export class TorrentParser {
     constructor(torrentFilePath) {
         this.torrentFilePath = torrentFilePath;
-        this.torrentFileContent = bencode.decode(fs.readFileSync(this.torrentFilePath), "utf8");
+        this.torrentFileContent = bencode.decode(fs.readFileSync(this.torrentFilePath));
         console.log("content : ", this.torrentFileContent);
     }
     get infoHash() {
-        console.log("infoooo : ", this.info);
+        console.log("the infii before the hash is : ", this.info);
         return crypto
             .createHash("sha1")
-            .update(bencode.encode(this.torrent.info))
+            .update(bencode.encode(this.info))
             .digest();
     }
     get size() {
