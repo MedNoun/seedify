@@ -116,9 +116,9 @@ export class Udp extends Network {
         this.connectionId.copy(payload, 0); // Connection ID
         payload.writeUInt32BE(Udp.actions.ANNOUNCE, 8); // Action ID (1 for announce)
         this.transactionId.copy(payload, 12);
-        metadata["infoHash"].copy(payload, 16);
+        metadata.infoHash.copy(payload, 16);
         Buffer.from(clientId).copy(payload, 36); // Peer ID
-        const left = this.getBufferUInt64BE(metadata["length"] - downloaded);
+        const left = this.getBufferUInt64BE(metadata.length - downloaded);
         const down = this.getBufferUInt64BE(downloaded);
         const up = this.getBufferUInt64BE(uploaded);
         down.copy(payload, 56);
