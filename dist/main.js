@@ -1,5 +1,3 @@
-import { TrackerManager } from "./tracker-manager.js";
-const trackerManager = new TrackerManager("src/torrent-files/t9.torrent");
-// trackerManager.httpConnectRequest().then((response) => {console.log('walah khdemt aman');
-// })
-trackerManager.getPeers();
+import { Client } from "./Client.js";
+const client = new Client();
+client.addTorrent("dist/torrents/t1.torrent");
