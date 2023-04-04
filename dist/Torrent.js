@@ -23,11 +23,16 @@ export class Torrent {
     }
     start() {
         return __awaiter(this, void 0, void 0, function* () {
+            let x = 0;
             if (this.metadata.announce) {
                 this.trackers.push(new Tracker(this.metadata.announce, this));
             }
             if (this.metadata.announceList) {
-                for (const a of this.metadata.announceList) {
+                for (let a of this.metadata.announceList) {
+                    const url = a.split("/");
+                    if (!url.pop().includes("announce")) {
+                        a = a + "/announce";
+                    }
                     this.trackers.push(new Tracker(a, this));
                 }
             }

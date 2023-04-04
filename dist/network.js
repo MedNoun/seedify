@@ -45,36 +45,39 @@ export class Udp extends Network {
             const { port, hostname } = url;
             const socket = dgram.createSocket("udp4");
             socket.send(this.connectPayload, Number(port), hostname);
-            const resp = yield new Promise((resolve, reject) => socket.on("message", (msg) => {
-                if (msg.length < 16)
-                    return reject();
-                let action = msg.readUInt32BE(0);
-                let respTransId = msg.subarray(4, 8);
-                console.log("hala message : ", msg);
-                if (this.transactionId.compare(respTransId))
-                    return reject();
-                switch (action) {
-                    case Udp.actions.CONNECT:
-                        this.connectionId = msg.subarray(8);
-                        const announcePayload = this.announcePayload(event, torrent);
-                        socket.send(announcePayload, Number(port), hostname);
-                        break;
-                    case Udp.actions.ANNOUNCE:
-                        socket.close();
-                        if (msg.length < 20)
-                            reject();
-                        const info = this.parseResponse(msg);
-                        resolve(info);
-                        break;
-                    case Udp.actions.ERROR:
-                        const err = msg.subarray(8).toString();
-                        reject(err);
-                        break;
-                    default:
-                    //logger.warn("received unknown actionId from tracker");
-                }
-            }));
-            console.log("fking : ", resp);
+            const resp = yield new Promise((resolve, reject) => {
+                const timeoutID = setTimeout(() => reject('longCalculation took too long'), 10000);
+                socket.on("message", (msg) => {
+                    if (msg.length < 16)
+                        return reject();
+                    let action = msg.readUInt32BE(0);
+                    let respTransId = msg.subarray(4, 8);
+                    if (this.transactionId.compare(respTransId))
+                        return reject();
+                    switch (action) {
+                        case Udp.actions.CONNECT:
+                            this.connectionId = msg.subarray(8);
+                            const announcePayload = this.announcePayload(event, torrent);
+                            socket.send(announcePayload, Number(port), hostname);
+                            break;
+                        case Udp.actions.ANNOUNCE:
+                            socket.close();
+                            if (msg.length < 20)
+                                reject();
+                            const info = this.parseResponse(msg);
+                            resolve(info);
+                            break;
+                        case Udp.actions.ERROR:
+                            const err = msg.subarray(8).toString();
+                            reject(err);
+                            break;
+                        default:
+                        //logger.warn("received unknown actionId from tracker");
+                    }
+                });
+            }).catch(e => {
+                console.log("error : ", e);
+            });
             return resp;
         });
     }
@@ -159,9 +162,7 @@ export class Http extends Network {
         });
     }
     parseResponse(resp) {
-        console.log("the all response is here :", resp);
         const responseInfo = bencode.decode(resp);
-        console.log("the all response is here :", responseInfo);
         if (responseInfo["failure reason"])
             return { error: responseInfo["failure reason"].toString() };
         return {

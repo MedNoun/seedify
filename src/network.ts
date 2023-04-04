@@ -44,12 +44,16 @@ export class Udp extends Network {
         const { port, hostname } = url;
         const socket = dgram.createSocket("udp4");
         socket.send(this.connectPayload, Number(port), hostname);
-        const resp = await new Promise((resolve, reject) =>
+        const resp = await new Promise((resolve, reject) => {
+
+            const timeoutID = setTimeout(
+                () => reject('longCalculation took too long'),
+                10000
+            );
             socket.on("message", (msg) => {
                 if (msg.length < 16) return reject();
                 let action = msg.readUInt32BE(0);
                 let respTransId = msg.subarray(4, 8);
-                console.log("hala message : ", msg);
 
                 if (this.transactionId.compare(respTransId)) return reject();
 
@@ -80,8 +84,11 @@ export class Udp extends Network {
                     //logger.warn("received unknown actionId from tracker");
                 }
             })
-        );
-        console.log("fking : ", resp);
+        }
+        ).catch(e => {
+            console.log("error : ", e);
+
+        });
         return resp;
     }
     private get connectPayload() {
