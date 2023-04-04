@@ -29,7 +29,6 @@ export class Tracker {
             trackerEvent,
             this.torrent
         );
-
         return resp;
     }
 }
