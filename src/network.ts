@@ -4,6 +4,7 @@ import crypto from "crypto";
 import bencode from "bencode";
 import dgram from "dgram";
 import { Tracker } from "./Tracker.js";
+import { Peer } from "./peer.js";
 
 export abstract class Network {
     public abstract connect(url: URL, event: string, torrent: Torrent);

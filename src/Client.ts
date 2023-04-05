@@ -4,7 +4,7 @@ class Options {
     constructor(
         public id: string = "-AMVK01-" + Math.random().toString().slice(2, 14),
         public port: number = 6882
-    ) {}
+    ) { }
 }
 export class Client {
     public id: string;

@@ -7,15 +7,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { Peer } from "./peer.js";
 import { TorrentParser } from "./TorrentParser.js";
 import { Tracker } from "./Tracker.js";
+import { PeerState } from "./types/peerState.enum.js";
 export class Torrent {
-    constructor(file, clientId, port, uploaded = 0, downloaded = 0) {
+    constructor(file, clientId, port, uploaded = 0, downloaded = 0, mode = Torrent.modes.DEFAULT, missingPieces = {}) {
         this.file = file;
         this.clientId = clientId;
         this.port = port;
         this.uploaded = uploaded;
         this.downloaded = downloaded;
+        this.mode = mode;
+        this.missingPieces = missingPieces;
         this.trackers = [];
         this.peers = [];
         this.metadata = TorrentParser.instance.parse(file);
@@ -39,7 +43,19 @@ export class Torrent {
             for (const t of this.trackers) {
                 const resp = yield t.announce(Tracker.events.STARTED);
                 console.log(resp);
+                if (resp) {
+                    for (let p of resp.peerList) {
+                        const peer = new Peer(p.ip, p.port, new PeerState(), this);
+                        this.peers.push(peer);
+                        peer.connect();
+                    }
+                }
             }
         });
     }
 }
+Torrent.modes = {
+    DEFAULT: "default",
+    ENDGAME: "endgame",
+    COMPLETED: "completed",
+};
