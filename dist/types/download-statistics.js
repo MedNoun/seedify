@@ -11,6 +11,8 @@ class DownloadStatistic {
     get numbytes() {
         return;
     }
+    set numbytes(n) {
+    }
     get rate() {
         const currtime = new Date().getTime();
         const t = (currtime - history[0].time) / 1000; //time in sec
@@ -29,6 +31,8 @@ class UploadStatitic {
     }
     get numbytes() {
         return;
+    }
+    set numbytes(n) {
     }
     get rate() {
         const currtime = new Date().getTime();

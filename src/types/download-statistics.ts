@@ -1,8 +1,8 @@
 
 export class Statistic {
 
-    downloadStatistic: DownloadStatistic = new DownloadStatistic()
-    uploadStatitic: UploadStatitic = new UploadStatitic()
+    public downloadStatistic: DownloadStatistic = new DownloadStatistic()
+    public uploadStatitic: UploadStatitic = new UploadStatitic()
 }
 
 class DownloadStatistic {
@@ -14,6 +14,9 @@ class DownloadStatistic {
     }
     get numbytes(): number {
         return
+    }
+    set numbytes(n : number){
+
     }
     get rate() {
         const currtime = new Date().getTime();
@@ -34,6 +37,9 @@ class UploadStatitic {
     }
     get numbytes(): number {
         return
+    }
+    set numbytes(n : number){
+
     }
     get rate() {
         const currtime = new Date().getTime();
