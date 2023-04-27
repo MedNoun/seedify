@@ -34,7 +34,7 @@ export class MessageFactory {
         };
     };
 
-     public static pgetKeepAliveMsg() {
+     public static getKeepAliveMsg() {
         const msg = Buffer.alloc(4);
         return msg;
     };
@@ -116,13 +116,13 @@ export class MessageFactory {
      public static parseMessage(msg) {
         const ID = msg.length > 4 ? msg.readInt8(4) : null;
         let payload = msg.length > 5 ? msg.slice(5) : null;
-        if (ID == 6 || ID == 7 || ID == 8) {
+        if (ID === 6 || ID === 7 || ID === 8) {
             const data = payload.slice(8);
             payload = {
                 index: payload.readInt32BE(0),
                 begin: payload.readInt32BE(4),
             };
-            payload[ID == 7 ? "block" : "length"] = data;
+            payload[ID === 7 ? "block" : "length"] = data;
         }
         return {
             size: msg.readInt32BE(0),

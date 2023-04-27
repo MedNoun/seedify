@@ -16,7 +16,7 @@ export class Tracker {
         public state: TrackerState = TrackerState.STOPPED
     ) {
         this.url = new URL(url);
-        if (this.url.protocol == "udp:") {
+        if (this.url.protocol === "udp:") {
             this.network = new Udp();
         } else {
             this.network = new Http();

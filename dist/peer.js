@@ -1,10 +1,9 @@
+import { Piece } from './piece.js';
 import { createConnection } from "net";
 import { MessageFactory } from "./message-factory.js";
 import { Statistic } from "./types/download-statistics.js";
 import { msgId } from "./types/messagesId.enum.js";
-import { Piece } from "./Piece.js";
 import BitSet from "bitset";
-// import  { BitSet } from 'bitset'
 export class Peer {
     constructor(ip, port, state, torrent, hscb, stream = null, lastReceivedTime = undefined, statistic = new Statistic(), socket = createConnection({ host: ip, port: port }), buffer = Buffer.alloc(0), msgProcessing = false, handshakeDone = false, bitfield = torrent ? BitSet.Random(torrent.numPieces) : null, uploadQueue = [], uploading = undefined, currPieceIndex = -1, uniqueId = ip + ":" + port, disconnected = false, intervalId = null) {
         this.ip = ip;
@@ -26,93 +25,10 @@ export class Peer {
         this.uniqueId = uniqueId;
         this.disconnected = disconnected;
         this.intervalId = intervalId;
-        this.onEnd = () => {
-            console.log(`Peer ${this.uniqueId} received end`);
-            this.stream = null;
-            if (this.state.amInterested) {
-                this.disconnect("reconnect" /*, 5000*/);
-            }
-            else {
-                this.disconnect("Not interested");
-            }
-        };
-        this.handleHandshake = () => {
-            const hs = MessageFactory.parseHandshake(this.buffer);
-            if (hs.pstr == "BitTorrent protocol") {
-                this.handshakeDone = true;
-                console.log(`Handshake done for Peer  ${this.id}`);
-            }
-            if (this.hscb) {
-                this.hscb(hs.infoHash);
-            }
-            this.buffer = this.buffer.slice(this.buffer.readUInt8(0) + 49);
-        };
-        this.disconnect = (msg) => {
-            console.log(`peer disconnected ${this.uniqueId} with message ${msg}`);
-            this.disconnected = true;
-            for (let i = 0; i < this.torrent.pieces.length; i++) {
-                this.torrent.pieces[i].count -= this.bitfield.get(i);
-            }
-            this.torrent.peers = this.torrent.peers.filter((p) => p.uniqueId !== this.uniqueId);
-            if (this.intervalId) {
-                clearInterval(this.intervalId);
-            }
-            if (this.socket) {
-                this.socket.destroy();
-                this.socket = null;
-            }
-        };
         this.send = (msg) => {
             if (this.socket) {
                 this.socket.write(msg);
             }
-        };
-        this.getRarestPieceIndex = () => {
-            let rarity = 100000; // large number
-            let pieceIndex = -1;
-            let ps = this.torrent.pieces;
-            for (let i = 0; i < ps.length; i++) {
-                if (this.test(this.bitfield, i) &&
-                    ps[i].count < rarity &&
-                    ps[i].state === Piece.states.PENDING
-                // ps[i].state !== Piece.states.COMPLETE
-                ) {
-                    rarity = ps[i].count;
-                    pieceIndex = i;
-                }
-            }
-            return pieceIndex;
-        };
-        this.handleBitfield = (m) => {
-            this.bitfield = this.fromBufferToBitset(m.payload.slice(0, Math.ceil(this.torrent.pieces.length / 8)));
-            for (let i = 0; i < this.torrent.pieces.length; i++) {
-                this.torrent.pieces[i].count += this.bitfield.get(i);
-            }
-            if (this.state.amInterested == false) {
-                this.state.amInterested = true;
-                const interested = MessageFactory.getInterestedMsg();
-                console.log(this.uniqueId, " : Sending Interested message : ");
-                this.socket.write(interested);
-            }
-        };
-        this.handleUploadQueue = () => {
-            if (this.uploadQueue.length > 0) {
-                const { index, begin, length } = this.uploadQueue.shift();
-                if (this.torrent.pieces[index].state === Piece.states.COMPLETE) {
-                    this.torrent.pieces[index].getData(begin, length).then((data) => {
-                        this.socket.write(data);
-                        this.torrent.uploaded += length;
-                        this.statistic.uploadStatitic.numbytes += length;
-                        this.statistic.uploadStatitic.history.push({
-                            time: new Date().getTime(),
-                            numbytes: this.statistic.uploadStatitic.numbytes,
-                        }); // thid update the uploaded history
-                        this.handleUploadQueue();
-                    });
-                }
-            }
-            else
-                this.uploading = false;
         };
     }
     get id() {
@@ -121,12 +37,25 @@ export class Peer {
     connect() {
         this.socket.on("connect", () => {
             let handshake = MessageFactory.buildHandshakePacket(this.torrent.metadata.infoHash, this.torrent.clientId);
+            console.log("I am sending the handshake method to the peer ", this.uniqueId);
             this.socket.write(handshake);
         });
         this.socket.on("error", (err) => this.onError(err));
         this.socket.on("data", (data) => this.onData(data));
         this.socket.on("end", () => this.onEnd());
+        //we must add the message keepAlicce every x minute
     }
+    onEnd() {
+        console.log(`Peer ${this.uniqueId} received end`);
+        this.stream = null;
+        if (this.state.amInterested) {
+            this.disconnect("reconnect" /*, 5000*/);
+        }
+        else {
+            this.disconnect("Not interested");
+        }
+    }
+    ;
     onData(data) {
         this.lastReceivedTime = new Date().getTime();
         this.buffer = Buffer.concat([this.buffer, data]);
@@ -144,8 +73,36 @@ export class Peer {
         this.msgProcessing = false;
     }
     ;
+    handleHandshake() {
+        const hs = MessageFactory.parseHandshake(this.buffer);
+        if (hs.pstr === "BitTorrent protocol") {
+            this.handshakeDone = true;
+            console.log(`Handshake done for Peer  ${this.id}`);
+        }
+        if (this.hscb) {
+            this.hscb(hs.infoHash);
+        }
+        this.buffer = this.buffer.slice(this.buffer.readUInt8(0) + 49);
+    }
+    ;
     onError(err) {
         this.disconnect(err.message);
+    }
+    ;
+    disconnect(msg) {
+        console.log(`peer disconnected ${this.uniqueId} with message ${msg}`);
+        this.disconnected = true;
+        for (let i = 0; i < this.torrent.pieces.length; i++) {
+            this.torrent.pieces[i].count -= this.bitfield.get(i);
+        }
+        this.torrent.peers = this.torrent.peers.filter((p) => p.uniqueId !== this.uniqueId);
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+        }
+        if (this.socket) {
+            this.socket.destroy();
+            this.socket = null;
+        }
     }
     ;
     isMsgComplete() {
@@ -171,6 +128,7 @@ export class Peer {
                 this.state.peerChoking = false;
                 console.log("Peer " + this.id + "unchoked us");
                 this.updateDownloadRate();
+                console.log("I am requesting piece !");
                 this.requestPiece();
                 break;
             case msgId.INTERESTED:
@@ -267,11 +225,12 @@ export class Peer {
         else {
             pieceIndex = this.getRarestPieceIndex();
         }
-        if (pieceIndex != -1) {
+        console.log("the piece index is :  ******************* ", pieceIndex);
+        if (pieceIndex !== -1) {
             const p = this.torrent.pieces[pieceIndex];
             p.state = Piece.states.ACTIVE;
             for (let i = 0; i < p.numBlocks; i++) {
-                if (this.torrent.mode === "endgame" && p.completedBlocks.test(i)) {
+                if (this.torrent.mode === "endgame" && this.test(p.completedBlocks, i)) {
                     continue;
                 }
                 let len = Piece.BlockLength;
@@ -294,6 +253,56 @@ export class Peer {
           */);
         }
     }
+    getRarestPieceIndex() {
+        let rarity = 100000; // large number
+        let pieceIndex = -1;
+        let ps = this.torrent.pieces;
+        for (let i = 0; i < ps.length; i++) {
+            if (this.test(this.bitfield, i) &&
+                ps[i].count < rarity &&
+                ps[i].state === Piece.states.PENDING
+            // ps[i].state !== Piece.states.COMPLETE
+            ) {
+                rarity = ps[i].count;
+                pieceIndex = i;
+            }
+        }
+        return pieceIndex;
+    }
+    ;
+    handleBitfield(m) {
+        this.bitfield = this.fromBufferToBitset(m.payload.slice(0, Math.ceil(this.torrent.pieces.length / 8)));
+        for (let i = 0; i < this.torrent.pieces.length; i++) {
+            this.torrent.pieces[i].count += this.bitfield.get(i);
+        }
+        if (this.state.amInterested === false) {
+            this.state.amInterested = true;
+            const interested = MessageFactory.getInterestedMsg();
+            console.log(this.uniqueId, " : Sending Interested message : ");
+            this.socket.write(interested);
+        }
+    }
+    ;
+    handleUploadQueue() {
+        if (this.uploadQueue.length > 0) {
+            const { index, begin, length } = this.uploadQueue.shift();
+            if (this.torrent.pieces[index].state === Piece.states.COMPLETE) {
+                this.torrent.pieces[index].getData(begin, length).then((data) => {
+                    this.socket.write(data);
+                    this.torrent.uploaded += length;
+                    this.statistic.uploadStatitic.numbytes += length;
+                    this.statistic.uploadStatitic.history.push({
+                        time: new Date().getTime(),
+                        numbytes: this.statistic.uploadStatitic.numbytes,
+                    }); // thid update the uploaded history
+                    this.handleUploadQueue();
+                });
+            }
+        }
+        else
+            this.uploading = false;
+    }
+    ;
     test(bitset, index) {
         return bitset.get(index) === 1;
     }

@@ -1,13 +1,12 @@
+import { Piece } from './piece.js';
 import { createConnection, Socket } from "net"
 import { MessageFactory } from "./message-factory.js";
 import { Torrent } from "./Torrent";
 import { Statistic } from "./types/download-statistics.js";
 import { msgId } from "./types/messagesId.enum.js";
 import { PeerState } from "./types/peerState.enum.js";
-import { Piece } from "./Piece.js";
 import BitSet from "bitset";
 
-// import  { BitSet } from 'bitset'
 
 export class Peer {
 
@@ -45,14 +44,17 @@ export class Peer {
                 this.torrent.metadata.infoHash,
                 this.torrent.clientId
             );
+            console.log("I am sending the handshake method to the peer ", this.uniqueId)
             this.socket.write(handshake);
         })
         this.socket.on("error", (err) => this.onError(err));
         this.socket.on("data", (data) => this.onData(data));
         this.socket.on("end", () => this.onEnd());
+
+        //we must add the message keepAlicce every x minute
     }
 
-    onEnd = () => {
+    public onEnd() {
         console.log(`Peer ${this.uniqueId} received end`);
         this.stream = null;
         if (this.state.amInterested) {
@@ -77,9 +79,9 @@ export class Peer {
         this.msgProcessing = false;
     };
 
-    handleHandshake = () => {
+    public handleHandshake() {
         const hs = MessageFactory.parseHandshake(this.buffer);
-        if (hs.pstr == "BitTorrent protocol") {
+        if (hs.pstr === "BitTorrent protocol") {
             this.handshakeDone = true;
             console.log(`Handshake done for Peer  ${this.id}`);
         }
@@ -93,7 +95,7 @@ export class Peer {
         this.disconnect(err.message);
     };
 
-    disconnect = (msg) => {
+    public disconnect(msg) {
         console.log(`peer disconnected ${this.uniqueId} with message ${msg}`);
         this.disconnected = true;
 
@@ -135,6 +137,7 @@ export class Peer {
                 this.state.peerChoking = false;
                 console.log("Peer " + this.id + "unchoked us");
                 this.updateDownloadRate();
+                console.log("I am requesting piece !")
                 this.requestPiece();
                 break;
 
@@ -245,11 +248,12 @@ export class Peer {
         } else {
             pieceIndex = this.getRarestPieceIndex();
         }
-        if (pieceIndex != -1) {
+        console.log("the piece index is :  ******************* ", pieceIndex)
+        if (pieceIndex !== -1) {
             const p = this.torrent.pieces[pieceIndex];
             p.state = Piece.states.ACTIVE;
             for (let i = 0; i < p.numBlocks; i++) {
-                if (this.torrent.mode === "endgame" && p.completedBlocks.test(i)) {
+                if (this.torrent.mode === "endgame" && this.test(p.completedBlocks, i)) {
                     continue;
                 }
                 let len = Piece.BlockLength;
@@ -271,7 +275,7 @@ export class Peer {
           */)
         }
     }
-    getRarestPieceIndex = () => {
+    getRarestPieceIndex() {
         let rarity = 100000; // large number
         let pieceIndex = -1;
         let ps = this.torrent.pieces;
@@ -288,7 +292,7 @@ export class Peer {
         }
         return pieceIndex;
     };
-    handleBitfield = (m) => {
+    public handleBitfield(m) {
         this.bitfield = this.fromBufferToBitset(m.payload.slice(0, Math.ceil(this.torrent.pieces.length / 8))
         );
 
@@ -296,7 +300,7 @@ export class Peer {
             this.torrent.pieces[i].count += this.bitfield.get(i);
         }
 
-        if (this.state.amInterested == false) {
+        if (this.state.amInterested === false) {
             this.state.amInterested = true;
             const interested = MessageFactory.getInterestedMsg();
             console.log(this.uniqueId, " : Sending Interested message : ");
@@ -304,11 +308,11 @@ export class Peer {
         }
     };
 
-    handleUploadQueue = () => {
+    public handleUploadQueue() {
         if (this.uploadQueue.length > 0) {
             const { index, begin, length } = this.uploadQueue.shift();
             if (this.torrent.pieces[index].state === Piece.states.COMPLETE) {
-                this.torrent.pieces[index].getData(begin, length).then((data) => {
+                this.torrent.pieces[index].getData(begin, length).then((data: any) => {
                     this.socket.write(data);
                     this.torrent.uploaded += length;
                     this.statistic.uploadStatitic.numbytes += length;
@@ -326,7 +330,8 @@ export class Peer {
     test(bitset: BitSet, index: number) {
         return bitset.get(index) === 1;
     }
-    fromBufferToBitset(buffer) {
+
+    public fromBufferToBitset(buffer) {
         const b = BitSet.Random(buffer.length * 8)
 
 

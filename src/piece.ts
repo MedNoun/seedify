@@ -1,6 +1,7 @@
-
 import BitSet from "bitset";
-import crypto from "crypto";
+import { BitsetUtils } from "./shared/bitset-met.js";
+import * as crypto from "crypto";
+
 export class Piece {
     static states = {
         ACTIVE: "active",
@@ -11,12 +12,12 @@ export class Piece {
     static BlockLength = Math.pow(2, 14);
 
     constructor(
-        public hash,
         public index,
         public offset,
         public len,
-        public length = len,
+        public hash,
         public files,
+        public length = len,
         public count = 0,
         public state = Piece.states.PENDING,
         public numBlocks = Math.ceil(length / Piece.BlockLength),
@@ -44,7 +45,7 @@ export class Piece {
                     .then(() => {
                         resolve(this.data.slice(begin, begin + length));
                     })
-                    .catch((err) => console.log("the error in get data in piece class :", err));
+                    .catch((err) => console.error(err));
             } else {
                 resolve(this.data.slice(begin, begin + length));
             }
@@ -52,10 +53,10 @@ export class Piece {
     };
 
     writePiece = () => {
-        console.log("this :", this)
+        console.debug(this);
         for (const f of this.files) {
             f.write(this.data, this.offset, (err) => {
-                if (err) console.log("the error in write piece : ", err);
+                if (err) console.error(err);
                 this.data = null;
                 this.saved = true;
             });
@@ -77,7 +78,7 @@ export class Piece {
     };
 
     isComplete = () => {
-        if (this.completedBlocks.toString().length === this.numBlocks) {
+        if (BitsetUtils.count(this.completedBlocks) === this.numBlocks) {
             let shasum = crypto.createHash("sha1").update(this.data).digest();
             if (!this.hash.compare(shasum)) {
                 this.state = Piece.states.COMPLETE;
@@ -90,7 +91,5 @@ export class Piece {
             }
         }
         return false;
-    };
-
-
+    }
 }

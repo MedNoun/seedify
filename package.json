@@ -23,6 +23,7 @@
     "bit-vec": "^1.0.4",
     "bit-vector": "^0.1.6",
     "bitset": "^5.1.1",
+    "cli-progress": "^3.12.0",
     "crypto": "^1.0.1",
     "fs": "^0.0.1-security"
   }
