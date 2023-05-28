@@ -2,19 +2,7 @@ import BitSet from "bitset";
 import { BitsetUtils } from "./shared/bitset-met.js";
 import * as crypto from "crypto";
 export class Piece {
-    constructor(index, offset, len, hash, files, length = len, count = 0, state = Piece.states.PENDING, numBlocks = Math.ceil(length / Piece.BlockLength), completedBlocks = BitSet.Random(numBlocks), data = Buffer.alloc(len), saved = false) {
-        this.index = index;
-        this.offset = offset;
-        this.len = len;
-        this.hash = hash;
-        this.files = files;
-        this.length = length;
-        this.count = count;
-        this.state = state;
-        this.numBlocks = numBlocks;
-        this.completedBlocks = completedBlocks;
-        this.data = data;
-        this.saved = saved;
+    constructor(index, offset, len, hash, files) {
         this.saveBlock = (begin, block) => {
             if (this.state === Piece.states.COMPLETE)
                 return true;
@@ -34,7 +22,7 @@ export class Piece {
                         .then(() => {
                         resolve(this.data.slice(begin, begin + length));
                     })
-                        .catch((err) => console.error(err));
+                        .catch((err) => console.log(err));
                 }
                 else {
                     resolve(this.data.slice(begin, begin + length));
@@ -42,11 +30,11 @@ export class Piece {
             });
         };
         this.writePiece = () => {
-            console.debug(this);
+            console.log(this);
             for (const f of this.files) {
                 f.write(this.data, this.offset, (err) => {
                     if (err)
-                        console.error(err);
+                        console.log(err);
                     this.data = null;
                     this.saved = true;
                 });
@@ -82,6 +70,17 @@ export class Piece {
             }
             return false;
         };
+        this.hash = hash;
+        this.index = index;
+        this.offset = offset;
+        this.length = len;
+        this.count = 0;
+        this.state = Piece.states.PENDING;
+        this.numBlocks = Math.ceil(this.length / Piece.BlockLength);
+        this.completedBlocks = BitSet.Random(this.numBlocks);
+        this.data = Buffer.alloc(len);
+        this.saved = false;
+        this.files = files;
     }
 }
 Piece.states = {

@@ -1,24 +1,25 @@
-import { Torrent } from "./Torrent.js";
-class Options {
-    constructor(id = "-AMVK01-" + Math.random().toString().slice(2, 14), port = 6882) {
-        this.id = id;
-        this.port = port;
-    }
-}
+import { Torrent } from './Torrent.js';
+import { Seeder } from './seeder.js';
 export class Client {
-    constructor(options = new Options()) {
-        this.torrents = new Map();
-        this.id = options.id;
-        this.port = options.port;
-    }
-    addTorrent(file) {
-        const torrent = new Torrent(file, this.id, this.port);
-        if (!this.torrents.has(torrent.metadata.infoHash)) {
-            this.torrents.set(torrent.metadata.infoHash, torrent);
-        }
-        return torrent;
-    }
-    removeTorrent(torrent) {
-        this.torrents.delete(torrent.metadata.infoHash);
+    constructor(options) {
+        this.closeSeeder = () => {
+            this.seeder.server.close();
+            this.seeder = null;
+        };
+        this.addTorrent = (filename, options) => {
+            const t = new Torrent(filename, this.clientId, this.port, options);
+            if (!this.torrents[t.metadata.infoHash]) {
+                this.torrents[t.metadata.infoHash] = t;
+            }
+            return t;
+        };
+        this.removeTorrent = (torrent) => {
+            delete this.torrents[torrent.metadata.infoHash];
+        };
+        this.clientId =
+            options.clientId || "-AMVK01-" + Math.random().toString().slice(2, 14);
+        this.port = options.port || 6882;
+        this.torrents = {};
+        this.seeder = new Seeder(this.port, this);
     }
 }

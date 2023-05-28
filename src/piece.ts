@@ -2,6 +2,8 @@ import BitSet from "bitset";
 import { BitsetUtils } from "./shared/bitset-met.js";
 import * as crypto from "crypto";
 
+
+
 export class Piece {
     static states = {
         ACTIVE: "active",
@@ -10,22 +12,30 @@ export class Piece {
         INCOMPLETE: "incomplete",
     };
     static BlockLength = Math.pow(2, 14);
+    hash
+    index
+    offset
+    length
+    count
+    state
+    numBlocks
+    completedBlocks
+    data
+    saved
+    files
 
-    constructor(
-        public index,
-        public offset,
-        public len,
-        public hash,
-        public files,
-        public length = len,
-        public count = 0,
-        public state = Piece.states.PENDING,
-        public numBlocks = Math.ceil(length / Piece.BlockLength),
-        public completedBlocks = BitSet.Random(numBlocks),
-        public data = Buffer.alloc(len),
-        public saved = false
-    ) {
-
+    constructor(index, offset, len, hash, files) {
+        this.hash = hash;
+        this.index = index;
+        this.offset = offset;
+        this.length = len;
+        this.count = 0;
+        this.state = Piece.states.PENDING;
+        this.numBlocks = Math.ceil(this.length / Piece.BlockLength);
+        this.completedBlocks = BitSet.Random(this.numBlocks);
+        this.data = Buffer.alloc(len);
+        this.saved = false;
+        this.files = files;
     }
 
     saveBlock = (begin, block) => {
@@ -45,7 +55,7 @@ export class Piece {
                     .then(() => {
                         resolve(this.data.slice(begin, begin + length));
                     })
-                    .catch((err) => console.error(err));
+                    .catch((err) => console.log(err));
             } else {
                 resolve(this.data.slice(begin, begin + length));
             }
@@ -53,10 +63,10 @@ export class Piece {
     };
 
     writePiece = () => {
-        console.debug(this);
+        console.log(this);
         for (const f of this.files) {
             f.write(this.data, this.offset, (err) => {
-                if (err) console.error(err);
+                if (err) console.log(err);
                 this.data = null;
                 this.saved = true;
             });
@@ -91,5 +101,7 @@ export class Piece {
             }
         }
         return false;
-    }
+    };
+
 }
+

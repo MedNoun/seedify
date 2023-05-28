@@ -1,6 +1,13 @@
-import { Http, Network, Udp } from "./network.js";
-import { Torrent } from "./Torrent.js";
-import { TrackerState } from "./types/TrackerState.js";
+import { Torrent } from './Torrent.js';
+import { Udp, Http } from './network.js';
+
+
+
+
+const CONNECTING = "connecting";
+const ERROR = "error";
+const STOPPED = "stopped";
+const WAITING = "waiting";
 
 export class Tracker {
     static events = {
@@ -8,27 +15,63 @@ export class Tracker {
         COMPLETED: "completed",
         STOPPED: "stopped",
     };
-    public url: URL;
-    public network: Network;
-    constructor(
-        url: string,
-        public torrent: Torrent,
-        public state: TrackerState = TrackerState.STOPPED
-    ) {
+    url: URL
+    torrent: Torrent
+    state: string
+    intervalId: any
+    handler: Udp | Http
+    constructor(url, torrent) {
         this.url = new URL(url);
+        this.torrent = torrent;
+        this.state = STOPPED;
+        this.intervalId = null;
         if (this.url.protocol === "udp:") {
-            this.network = new Udp();
+            this.handler = new Udp(this);
         } else {
-            this.network = new Http();
+            this.handler = new Http(this);
         }
     }
-    public async announce(trackerEvent: string) {
-        this.state = TrackerState.CONNECTING;
-        const resp = await this.network.connect(
-            this.url,
-            trackerEvent,
-            this.torrent
-        );
-        return resp;
+
+    announce(event, cb) {
+        this.state = CONNECTING;
+        this.handler
+            .connect(event)
+            .then((data) => {
+                this.state = WAITING;
+                if (event === Tracker.events.STARTED) {
+                    if (this.intervalId) {
+                        clearInterval(this.intervalId);
+                    }
+                    if (data["interval"]) {
+                        this.intervalId = setInterval(() => {
+                            this.announce(null, cb);
+                        }, data["interval"] * 1000);
+                    }
+                } else if (event === Tracker.events.STOPPED) {
+                    clearInterval(this.intervalId);
+                    this.intervalId = null;
+                    this.state = STOPPED;
+                }
+                cb(null, data);
+            })
+            .catch((err) => {
+                this.state = ERROR;
+                if (event === Tracker.events.STARTED && err != "ENOTFOUND") {
+                    setTimeout(() => this.announce(null, cb), 30000);
+                } else {
+                    this.shutdown();
+                }
+                cb(err);
+            });
     }
+
+    shutdown = () => {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+        }
+    };
+
+
 }
+
+

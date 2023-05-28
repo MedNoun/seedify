@@ -1,27 +1,39 @@
-import { Torrent } from "./Torrent.js";
+import { Torrent } from './Torrent.js';
+import { Seeder } from './seeder.js';
 
-class Options {
-    constructor(
-        public id: string = "-AMVK01-" + Math.random().toString().slice(2, 14),
-        public port: number = 6882
-    ) { }
-}
+
+
+
+
 export class Client {
-    public id: string;
-    public port: number;
-    public torrents = new Map<any, Torrent>();
-    constructor(options: Options = new Options()) {
-        this.id = options.id;
-        this.port = options.port;
+  clientId: string
+  port: number
+  torrents
+  seeder: Seeder
+  constructor(options: any) {
+    this.clientId =
+      options.clientId || "-AMVK01-" + Math.random().toString().slice(2, 14);
+    this.port = options.port || 6882;
+    this.torrents = {};
+    this.seeder = new Seeder(this.port, this);
+  }
+
+  closeSeeder = () => {
+    this.seeder.server.close();
+    this.seeder = null;
+  };
+
+  addTorrent = (filename, options) => {
+    const t = new Torrent(filename, this.clientId, this.port, options);
+    if (!this.torrents[t.metadata.infoHash]) {
+      this.torrents[t.metadata.infoHash] = t;
     }
-    public addTorrent(file: string) {
-        const torrent = new Torrent(file, this.id, this.port);
-        if (!this.torrents.has(torrent.metadata.infoHash)) {
-            this.torrents.set(torrent.metadata.infoHash, torrent);
-        }
-        return torrent;
-    }
-    public removeTorrent(torrent: Torrent) {
-        this.torrents.delete(torrent.metadata.infoHash);
-    }
+    return t;
+  };
+
+  removeTorrent = (torrent) => {
+    delete this.torrents[torrent.metadata.infoHash];
+  };
 }
+
+

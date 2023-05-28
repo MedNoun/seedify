@@ -1,11 +1,6 @@
 import * as fs from "fs";
 export class File {
-    constructor(path, length, offset, fd = null, busy = true) {
-        this.path = path;
-        this.length = length;
-        this.offset = offset;
-        this.fd = fd;
-        this.busy = busy;
+    constructor(path, length, offset) {
         this.open = (errorHandler) => {
             fs.open(this.path, "r+", (err, fd) => {
                 if (err) {
@@ -13,7 +8,7 @@ export class File {
                         fs.open(this.path, "w+", (err, fd) => {
                             if (err)
                                 return errorHandler(err);
-                            console.log("************ file opened in file class ************");
+                            console.log("opened file");
                             this.busy = false;
                             this.fd = fd;
                         });
@@ -23,7 +18,7 @@ export class File {
                 }
                 else {
                     this.fd = fd;
-                    console.log("************ file opened in file class ************");
+                    console.log("opened file");
                     this.busy = false;
                 }
             });
@@ -80,6 +75,11 @@ export class File {
                 return cb(err);
             });
         };
+        this.path = path;
+        this.length = length;
+        this.offset = offset;
+        this.fd = null;
+        this.busy = true; // set to busy till we open the file
     }
     getBounds(dataStart, dataLength) {
         const start = Math.max(this.offset, dataStart);

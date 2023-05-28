@@ -1,31 +1,58 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-import { Http, Udp } from "./network.js";
-import { TrackerState } from "./types/TrackerState.js";
+import { Udp, Http } from './network.js';
+const CONNECTING = "connecting";
+const ERROR = "error";
+const STOPPED = "stopped";
+const WAITING = "waiting";
 export class Tracker {
-    constructor(url, torrent, state = TrackerState.STOPPED) {
-        this.torrent = torrent;
-        this.state = state;
+    constructor(url, torrent) {
+        this.shutdown = () => {
+            if (this.intervalId) {
+                clearInterval(this.intervalId);
+            }
+        };
         this.url = new URL(url);
+        this.torrent = torrent;
+        this.state = STOPPED;
+        this.intervalId = null;
         if (this.url.protocol === "udp:") {
-            this.network = new Udp();
+            this.handler = new Udp(this);
         }
         else {
-            this.network = new Http();
+            this.handler = new Http(this);
         }
     }
-    announce(trackerEvent) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.state = TrackerState.CONNECTING;
-            const resp = yield this.network.connect(this.url, trackerEvent, this.torrent);
-            return resp;
+    announce(event, cb) {
+        this.state = CONNECTING;
+        this.handler
+            .connect(event)
+            .then((data) => {
+            this.state = WAITING;
+            if (event === Tracker.events.STARTED) {
+                if (this.intervalId) {
+                    clearInterval(this.intervalId);
+                }
+                if (data["interval"]) {
+                    this.intervalId = setInterval(() => {
+                        this.announce(null, cb);
+                    }, data["interval"] * 1000);
+                }
+            }
+            else if (event === Tracker.events.STOPPED) {
+                clearInterval(this.intervalId);
+                this.intervalId = null;
+                this.state = STOPPED;
+            }
+            cb(null, data);
+        })
+            .catch((err) => {
+            this.state = ERROR;
+            if (event === Tracker.events.STARTED && err != "ENOTFOUND") {
+                setTimeout(() => this.announce(null, cb), 30000);
+            }
+            else {
+                this.shutdown();
+            }
+            cb(err);
         });
     }
 }
