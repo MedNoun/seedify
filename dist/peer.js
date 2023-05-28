@@ -225,7 +225,7 @@ export class Peer {
         else {
             pieceIndex = this.getRarestPieceIndex();
         }
-        console.log("the piece index is :  ******************* ", pieceIndex);
+        // console.log("the piece index is :  ******************* ", pieceIndex)
         if (pieceIndex !== -1) {
             const p = this.torrent.pieces[pieceIndex];
             p.state = Piece.states.ACTIVE;
